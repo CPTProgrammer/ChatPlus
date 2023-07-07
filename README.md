@@ -1,5 +1,6 @@
 # ChatPlus
- A Simple mod add bukkit style with an "&" and "[item]" display for Fabric Server
+ A Simple mod add bukkit style with an "&" and "[item]" display for Fabric Server.
+ It's a server-side mod and doesn't need to be installed on the client.
  
  Current Minecraft version: 1.20.1
 
