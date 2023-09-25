@@ -122,9 +122,10 @@ public abstract class MixinChat {
 
 					try {
 						SignedMessage signedMessage = getSignedMessage(packet, (LastSeenMessageList) optional.get());
-						server.getPlayerManager().broadcast(signedMessage.withUnsignedContent(
+						/*server.getPlayerManager().broadcast(signedMessage.withUnsignedContent(
 								changedText
-						), player, MessageType.params(MessageType.CHAT, player));
+						), player, MessageType.params(MessageType.CHAT, player));*/
+						handleDecoratedMessage(signedMessage.withUnsignedContent(changedText));
 					} catch (MessageChain.MessageChainException e) {
 						handleMessageChainException(e);
 					}
