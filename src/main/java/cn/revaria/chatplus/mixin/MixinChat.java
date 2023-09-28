@@ -1,15 +1,7 @@
 package cn.revaria.chatplus.mixin;
 
-import io.netty.util.internal.StringUtil;
-import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.minecraft.SharedConstants;
-import net.minecraft.block.AbstractBlock;
-import net.minecraft.block.AirBlock;
-import net.minecraft.block.Block;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.network.message.LastSeenMessageList;
 import net.minecraft.network.message.MessageChain;
 import net.minecraft.network.message.MessageType;
@@ -17,34 +9,27 @@ import net.minecraft.network.message.SignedMessage;
 import net.minecraft.network.message.MessageChainTaskQueue;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket;
-import net.minecraft.network.listener.ServerPlayPacketListener;
+import net.minecraft.server.PlayerManager;
 import net.minecraft.server.filter.FilteredMessage;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
-import net.minecraft.text.LiteralTextContent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import net.minecraft.item.AirBlockItem;
 import net.minecraft.text.TextContent;
-import net.minecraft.util.Formatting;
-import net.minecraft.nbt.NbtCompound;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.core.jmx.Server;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
@@ -106,8 +91,8 @@ public abstract class MixinChat {
 					}
 
 					MutableText changedText = MutableText.of(TextContent.EMPTY);
-					for (int i = 0; i < messages.length; i++) {
-						changedText.append(Text.of(messages[i]));
+					for (String message : messages) {
+						changedText.append(Text.of(message));
 						if (!itemDeque.isEmpty()) {
 							ItemStack itemStack;
 							if (itemDeque.getFirst() == -1) {
@@ -122,10 +107,16 @@ public abstract class MixinChat {
 
 					try {
 						SignedMessage signedMessage = getSignedMessage(packet, (LastSeenMessageList) optional.get());
-						/*server.getPlayerManager().broadcast(signedMessage.withUnsignedContent(
+						server.getPlayerManager().broadcast(signedMessage.withUnsignedContent(
 								changedText
-						), player, MessageType.params(MessageType.CHAT, player));*/
-						handleDecoratedMessage(signedMessage.withUnsignedContent(changedText));
+						), player, MessageType.params(MessageType.CHAT, player));
+						// handleDecoratedMessage(signedMessage.withUnsignedContent(changedText));
+						try {
+							Class<?> DiscordIntegrationMod = Class.forName("de.erdbeerbaerlp.dcintegration.fabric.DiscordIntegrationMod");
+							Method handleChatMessage = DiscordIntegrationMod.getMethod("handleChatMessage", SignedMessage.class, ServerPlayerEntity.class);
+							handleChatMessage.invoke(null, signedMessage.withUnsignedContent(changedText), player);
+						} catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException |
+								 IllegalAccessException ignored) { }
 					} catch (MessageChain.MessageChainException e) {
 						handleMessageChainException(e);
 					}
