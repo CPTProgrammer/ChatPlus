@@ -2,6 +2,7 @@ package cn.revaria.chatplus.mixin;
 
 import net.minecraft.SharedConstants;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.ClientConnection;
 import net.minecraft.network.message.LastSeenMessageList;
 import net.minecraft.network.message.MessageChain;
 import net.minecraft.network.message.MessageType;
@@ -9,25 +10,22 @@ import net.minecraft.network.message.SignedMessage;
 import net.minecraft.network.message.MessageChainTaskQueue;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket;
-import net.minecraft.server.PlayerManager;
 import net.minecraft.server.filter.FilteredMessage;
+import net.minecraft.server.network.ConnectedClientData;
+import net.minecraft.server.network.ServerCommonNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import net.minecraft.text.TextContent;
-import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Optional;
@@ -36,25 +34,19 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Mixin(ServerPlayNetworkHandler.class)
-public abstract class MixinChat {
-	@Shadow @Final
-	static Logger LOGGER;
-
-	@Final
-	@Shadow
-	private MinecraftServer server;
-
-	@Shadow
-	public abstract void disconnect(Text reason);
+public abstract class MixinChat extends ServerCommonNetworkHandler {
+	public MixinChat(MinecraftServer server, ClientConnection connection, ConnectedClientData clientData) {
+		super(server, connection, clientData);
+	}
 
 	@Final
 	@Shadow
 	private MessageChainTaskQueue messageChainTaskQueue;
 
 	@Shadow
-	private ServerPlayerEntity player;
+	public ServerPlayerEntity player;
 
-	@Shadow protected abstract Optional<LastSeenMessageList> validateMessage(String message, Instant timestamp, LastSeenMessageList.Acknowledgment acknowledgment);
+	@Shadow protected abstract Optional<LastSeenMessageList> validateMessage(LastSeenMessageList.Acknowledgment acknowledgment);
 
 	@Shadow protected abstract SignedMessage getSignedMessage(ChatMessageC2SPacket packet, LastSeenMessageList lastSeenMessages) throws MessageChain.MessageChainException;
 
@@ -71,7 +63,7 @@ public abstract class MixinChat {
 		if (hasIllegalCharacter(packet.chatMessage())) {
 			disconnect(Text.translatable("multiplayer.disconnect.illegal_characters"));
 		} else {
-			Optional<LastSeenMessageList> optional = this.validateMessage(packet.chatMessage(), packet.timestamp(), packet.acknowledgment());
+			Optional<LastSeenMessageList> optional = this.validateMessage(packet.acknowledgment());
 			if (optional.isPresent()) {
 				if (!packet.chatMessage().startsWith("/")){
 
@@ -90,7 +82,7 @@ public abstract class MixinChat {
 						}
 					}
 
-					MutableText changedText = MutableText.of(TextContent.EMPTY);
+					MutableText changedText = Text.empty();
 					for (String message : messages) {
 						changedText.append(Text.of(message));
 						if (!itemDeque.isEmpty()) {
@@ -131,12 +123,10 @@ public abstract class MixinChat {
 						}
 
 						CompletableFuture<FilteredMessage> completableFuture = filterText(signedMessage.getSignedContent());
-						CompletableFuture<Text> completableFuture2 = this.server.getMessageDecorator().decorate(this.player, signedMessage.getContent());
-						messageChainTaskQueue.append((executor) -> {
-							return CompletableFuture.allOf(completableFuture, completableFuture2).thenAcceptAsync((void_) -> {
-								SignedMessage signedMessage2 = signedMessage.withUnsignedContent((Text) completableFuture2.join()).withFilterMask(((FilteredMessage) completableFuture.join()).mask());
-								handleDecoratedMessage(signedMessage2);
-							}, executor);
+						Text decoratedMessage = this.server.getMessageDecorator().decorate(this.player, signedMessage.getContent());
+						messageChainTaskQueue.append(completableFuture, filteredMessage -> {
+							SignedMessage message = signedMessage.withUnsignedContent(decoratedMessage).withFilterMask(filteredMessage.mask());
+							this.handleDecoratedMessage(message);
 						});
 					});
 				}
