@@ -1,20 +1,17 @@
 package cn.revaria.chatplus.mixin;
 
+import net.minecraft.MinecraftVersion;
 import net.minecraft.SharedConstants;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.ClientConnection;
-import net.minecraft.network.message.LastSeenMessageList;
-import net.minecraft.network.message.MessageChain;
-import net.minecraft.network.message.MessageType;
-import net.minecraft.network.message.SignedMessage;
-import net.minecraft.network.message.MessageChainTaskQueue;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.network.message.*;
 import net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.filter.FilteredMessage;
 import net.minecraft.server.network.ConnectedClientData;
 import net.minecraft.server.network.ServerCommonNetworkHandler;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Final;
@@ -24,6 +21,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayDeque;
@@ -102,13 +100,34 @@ public abstract class MixinChat extends ServerCommonNetworkHandler {
 						server.getPlayerManager().broadcast(signedMessage.withUnsignedContent(
 								changedText
 						), player, MessageType.params(MessageType.CHAT, player));
-						// handleDecoratedMessage(signedMessage.withUnsignedContent(changedText));
+
+						// Compatible with mod "Discord Integration"
 						try {
 							Class<?> DiscordIntegrationMod = Class.forName("de.erdbeerbaerlp.dcintegration.fabric.DiscordIntegrationMod");
 							Method handleChatMessage = DiscordIntegrationMod.getMethod("handleChatMessage", SignedMessage.class, ServerPlayerEntity.class);
 							handleChatMessage.invoke(null, signedMessage.withUnsignedContent(changedText), player);
 						} catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException |
 								 IllegalAccessException ignored) { }
+
+						// Compatible with mod "Dynmap"
+						try {
+							/*
+							  Warning: Using reflection can make the code harder to maintain, debug, and understand.
+							  Statement: DynmapMod.plugin.chathandler.handleChat()
+							 */
+							Class<?> DynmapMod = Class.forName("org.dynmap.fabric_" + MinecraftVersion.CURRENT.getName().replaceAll("\\.", "_") + ".DynmapMod");
+							Field pluginField = DynmapMod.getField("plugin");
+							Object plugin = pluginField.get(null);
+							Class<?> pluginClass = plugin.getClass();
+							Field chatHandlerField = pluginClass.getDeclaredField("chathandler");
+							chatHandlerField.setAccessible(true);
+							Object chatHandler = chatHandlerField.get(plugin);
+							Class<?> chatHandlerClass = chatHandler.getClass();
+							Method handleChat = chatHandlerClass.getMethod("handleChat", ServerPlayerEntity.class, String.class);
+							handleChat.invoke(chatHandler, player, signedMessage.withUnsignedContent(changedText).getContent().getString());
+						} catch (ClassNotFoundException | NoSuchMethodException | NoSuchFieldException | NullPointerException |
+								 IllegalAccessException | InvocationTargetException ignored) { }
+
 					} catch (MessageChain.MessageChainException e) {
 						handleMessageChainException(e);
 					}
@@ -116,7 +135,7 @@ public abstract class MixinChat extends ServerCommonNetworkHandler {
 					this.server.submit(() -> {
 						SignedMessage signedMessage;
 						try {
-							signedMessage = this.getSignedMessage(packet, (LastSeenMessageList) optional.get());
+							signedMessage = this.getSignedMessage(packet, optional.get());
 						} catch (MessageChain.MessageChainException var6) {
 							handleMessageChainException(var6);
 							return;
