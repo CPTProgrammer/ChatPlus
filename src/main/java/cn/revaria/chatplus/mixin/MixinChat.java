@@ -1,7 +1,6 @@
 package cn.revaria.chatplus.mixin;
 
 import net.minecraft.MinecraftVersion;
-import net.minecraft.SharedConstants;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.message.*;
@@ -14,6 +13,7 @@ import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.util.StringHelper;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -44,7 +44,9 @@ public abstract class MixinChat extends ServerCommonNetworkHandler {
 	@Shadow
 	public ServerPlayerEntity player;
 
-	@Shadow protected abstract Optional<LastSeenMessageList> validateMessage(LastSeenMessageList.Acknowledgment acknowledgment);
+//	@Shadow protected abstract Optional<LastSeenMessageList> validateMessage(LastSeenMessageList.Acknowledgment acknowledgment);
+	
+	@Shadow protected abstract Optional<LastSeenMessageList> validateAcknowledgment(LastSeenMessageList.Acknowledgment acknowledgment);
 
 	@Shadow protected abstract SignedMessage getSignedMessage(ChatMessageC2SPacket packet, LastSeenMessageList lastSeenMessages) throws MessageChain.MessageChainException;
 
@@ -61,8 +63,7 @@ public abstract class MixinChat extends ServerCommonNetworkHandler {
 		if (hasIllegalCharacter(packet.chatMessage())) {
 			disconnect(Text.translatable("multiplayer.disconnect.illegal_characters"));
 		} else {
-			Optional<LastSeenMessageList> optional = this.validateMessage(packet.acknowledgment());
-			if (optional.isPresent()) {
+			Optional<LastSeenMessageList> optional = this.validateAcknowledgment(packet.acknowledgment());			if (optional.isPresent()) {
 				if (!packet.chatMessage().startsWith("/")){
 
 					String changedMessage = packet.chatMessage().replace('&', '§');
@@ -158,7 +159,7 @@ public abstract class MixinChat extends ServerCommonNetworkHandler {
 
 	private static boolean hasIllegalCharacter(String message) {
 		for(int i = 0; i < message.length(); ++i) {
-			if (!SharedConstants.isValidChar(message.charAt(i))) {
+			if (!StringHelper.isValidChar(message.charAt(i))) {
 				return true;
 			}
 		}
