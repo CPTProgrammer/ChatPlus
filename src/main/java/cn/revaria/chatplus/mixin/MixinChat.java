@@ -45,7 +45,7 @@ public abstract class MixinChat extends ServerCommonNetworkHandler {
 	public ServerPlayerEntity player;
 
 //	@Shadow protected abstract Optional<LastSeenMessageList> validateMessage(LastSeenMessageList.Acknowledgment acknowledgment);
-	
+
 	@Shadow protected abstract Optional<LastSeenMessageList> validateAcknowledgment(LastSeenMessageList.Acknowledgment acknowledgment);
 
 	@Shadow protected abstract SignedMessage getSignedMessage(ChatMessageC2SPacket packet, LastSeenMessageList lastSeenMessages) throws MessageChain.MessageChainException;
@@ -63,7 +63,8 @@ public abstract class MixinChat extends ServerCommonNetworkHandler {
 		if (hasIllegalCharacter(packet.chatMessage())) {
 			disconnect(Text.translatable("multiplayer.disconnect.illegal_characters"));
 		} else {
-			Optional<LastSeenMessageList> optional = this.validateAcknowledgment(packet.acknowledgment());			if (optional.isPresent()) {
+			Optional<LastSeenMessageList> optional = this.validateAcknowledgment(packet.acknowledgment());
+			if (optional.isPresent()) {
 				if (!packet.chatMessage().startsWith("/")){
 
 					String changedMessage = packet.chatMessage().replace('&', '§');
@@ -99,35 +100,41 @@ public abstract class MixinChat extends ServerCommonNetworkHandler {
 					try {
 						SignedMessage signedMessage = getSignedMessage(packet, (LastSeenMessageList) optional.get());
 						server.getPlayerManager().broadcast(signedMessage.withUnsignedContent(
-								changedText
+							changedText
 						), player, MessageType.params(MessageType.CHAT, player));
 
 						// Compatible with mod "Discord Integration"
 						try {
-							Class<?> DiscordIntegrationMod = Class.forName("de.erdbeerbaerlp.dcintegration.fabric.DiscordIntegrationMod");
+							Class<?> DiscordIntegrationMod = Class.forName("de.erdbeerbaerlp.dcintegration.architectury.DiscordIntegrationMod");
 							Method handleChatMessage = DiscordIntegrationMod.getMethod("handleChatMessage", SignedMessage.class, ServerPlayerEntity.class);
 							handleChatMessage.invoke(null, signedMessage.withUnsignedContent(changedText), player);
 						} catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException |
 								 IllegalAccessException ignored) { }
 
 						// Compatible with mod "Dynmap"
-						try {
-							/*
-							  Warning: Using reflection can make the code harder to maintain, debug, and understand.
-							  Statement: DynmapMod.plugin.chathandler.handleChat()
-							 */
-							Class<?> DynmapMod = Class.forName("org.dynmap.fabric_" + MinecraftVersion.CURRENT.getName().replaceAll("\\.", "_") + ".DynmapMod");
-							Field pluginField = DynmapMod.getField("plugin");
-							Object plugin = pluginField.get(null);
-							Class<?> pluginClass = plugin.getClass();
-							Field chatHandlerField = pluginClass.getDeclaredField("chathandler");
-							chatHandlerField.setAccessible(true);
-							Object chatHandler = chatHandlerField.get(plugin);
-							Class<?> chatHandlerClass = chatHandler.getClass();
-							Method handleChat = chatHandlerClass.getMethod("handleChat", ServerPlayerEntity.class, String.class);
-							handleChat.invoke(chatHandler, player, signedMessage.withUnsignedContent(changedText).getContent().getString());
-						} catch (ClassNotFoundException | NoSuchMethodException | NoSuchFieldException | NullPointerException |
-								 IllegalAccessException | InvocationTargetException ignored) { }
+						String[] minecraftVersion = MinecraftVersion.CURRENT.getName().split("\\.");
+						int minecraftPatchVersion = minecraftVersion.length == 3 ? Integer.parseInt(minecraftVersion[2]) : 0;
+						for (int i = minecraftPatchVersion; i >= 0; i--){
+							String version = minecraftVersion[0] + "." + minecraftVersion[1] + (i == 0 ? "" : ("." + i));
+							try {
+								/*
+								  Warning: Using reflection can make the code harder to maintain, debug, and understand.
+								  Statement: DynmapMod.plugin.chathandler.handleChat()
+								 */
+								Class<?> DynmapMod = Class.forName("org.dynmap.fabric_" + version.replaceAll("\\.", "_") + ".DynmapMod");
+								Field pluginField = DynmapMod.getField("plugin");
+								Object plugin = pluginField.get(null);
+								Class<?> pluginClass = plugin.getClass();
+								Field chatHandlerField = pluginClass.getDeclaredField("chathandler");
+								chatHandlerField.setAccessible(true);
+								Object chatHandler = chatHandlerField.get(plugin);
+								Class<?> chatHandlerClass = chatHandler.getClass();
+								Method handleChat = chatHandlerClass.getMethod("handleChat", ServerPlayerEntity.class, String.class);
+								handleChat.invoke(chatHandler, player, signedMessage.withUnsignedContent(changedText).getContent().getString());
+								break;
+							} catch (ClassNotFoundException | NoSuchMethodException | NoSuchFieldException | NullPointerException |
+									 IllegalAccessException | InvocationTargetException ignored) { }
+						}
 
 					} catch (MessageChain.MessageChainException e) {
 						handleMessageChainException(e);
