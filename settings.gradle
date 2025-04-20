@@ -1,3 +1,5 @@
+import java.nio.file.Paths
+
 pluginManagement {
 	repositories {
 		maven {
@@ -7,4 +9,92 @@ pluginManagement {
 		mavenCentral()
 		gradlePluginPortal()
 	}
+}
+
+/**
+ * Load compatible properties file for current Minecraft version in {@code version_properties_path} and
+ * define {@code minecraftVersions}, {@code targetVersion}
+ */
+def loadProperties() {
+	def propertyFiles = fileTree(Paths.get(rootDir.absolutePath, version_properties_path as String)).files.name
+	def minecraftVersions = propertyFiles.collect { it.replaceAll(/\.properties$/, "") }
+
+	minecraftVersions.sort { a, b -> compareMinecraftVersion(a, b) }
+	gradle.ext.minecraftVersions = minecraftVersions
+
+	// Prefer the version defined by the command line argument -Pmc=x.x.x
+	def inputVersion = hasProperty("mc") ?
+		validateMinecraftVersionFormat(mc as String, "Invalid Minecraft version provided via -Pmc=${minecraft_version}") :
+		validateMinecraftVersionFormat(minecraft_version, "Invalid Minecraft version in gradle.properties: minecraft_version=${minecraft_version}")
+	gradle.ext.minecraft_version = inputVersion
+
+	def targetVersion = findLatestCompatibleVersion(minecraftVersions, inputVersion) ?:
+		{ throw new GradleException("Unsupported Minecraft version: ${inputVersion}") }()
+	println "Target Minecraft version: ${targetVersion}"
+	gradle.ext.targetVersion = targetVersion
+
+	def props = new Properties()
+	file(Paths.get(rootDir.absolutePath, version_properties_path as String, "${targetVersion}.properties")).withInputStream { props.load(it) }
+	props.each { prop -> gradle.ext.set(prop.key, prop.value) }
+}
+
+loadProperties()
+
+
+
+/** ======================================= */
+/** ================ Utils ================ */
+/** ======================================= */
+
+/**
+ * Finds the latest compatible version that is less than or equal to the target version
+ * while maintaining matching major and minor version components.
+ *
+ * @param sortedVersions A pre-sorted ascending list of semantic version strings <br> (e.g., {@code ["1.18", "1.18.2", "1.19.1"]})
+ * @param version
+ *
+ * @return The latest compatible version string, or {@code null} if no matching version is found
+ */
+static String findLatestCompatibleVersion(List<String> sortedVersions, String version) {
+	def targetVersionList = version.tokenize(".")*.toInteger()
+	sortedVersions.findAll {
+		def versionList = it.tokenize(".")*.toInteger()
+		compareMinecraftVersion(versionList, targetVersionList) <= 0 &&
+			(targetVersionList[0] == versionList[0] && targetVersionList[1] == versionList[1])
+	}.max { a, b -> compareMinecraftVersion(a, b) }
+}
+
+/**
+ * Compares two Minecraft version
+ * @return comparison result with equivalent semantics to {@link Integer#compareTo(Integer) compareTo()}
+ */
+static int compareMinecraftVersion(String versionA, String versionB) {
+	def versionListA = versionA.tokenize(".")*.toInteger()
+	def versionListB = versionB.tokenize(".")*.toInteger()
+	compareMinecraftVersion(versionListA, versionListB)
+}
+/**
+ * Compares two Minecraft version
+ * @return comparison result with equivalent semantics to {@link Integer#compareTo(Integer) compareTo()}
+ */
+static int compareMinecraftVersion(List<Integer> versionA, List<Integer> versionB) {
+	(versionA[0] <=> versionB[0]) ?: (versionA[1] <=> versionB[1]) ?:
+		(versionA.size() <=> versionB.size() ?: versionA[2] <=> versionB[2])
+}
+
+/**
+ * Validates Minecraft version format ({@code major.minor[.patch]} numeric components).<br>
+ * Throws {@link GradleException} with provided or default message if validation fails.
+ *
+ * @param version Version string to validate
+ * @param errorMessage Optional custom exception message (default: {@code "Invalid Minecraft version: X.Y[.Z]"})
+ * @return Original version if valid
+ * @throws GradleException If version format is invalid
+ */
+static String validateMinecraftVersionFormat(String version, String errorMessage = null) {
+	def versionList = version.tokenize(".")
+	if ((2 <= versionList.size() && versionList.size() <= 3) && versionList.every { it.isInteger() }) {
+		return version
+	}
+	throw new GradleException(errorMessage ?: "Invalid Minecraft version: ${version}")
 }

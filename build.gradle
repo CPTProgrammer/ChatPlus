@@ -1,9 +1,20 @@
+import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
+import java.nio.file.Paths
+
 plugins {
-	id 'fabric-loom' version '1.9-SNAPSHOT'
-	id 'maven-publish'
+	id "fabric-loom" version "1.10-SNAPSHOT"
+	id "maven-publish"
+
+	// Manifold preprocessor
+	id "systems.manifold.manifold-gradle-plugin" version "0.0.2-alpha"
 }
 
-version = project.mod_version + "-mc" + project.minecraft_version
+// Transfer gradle extra properties to root project extra properties
+gradle.ext.properties.each { prop -> project.ext.set(prop.key, prop.value) }
+
+generateBuildProperties(project.minecraftVersions, project.targetVersion)
+
+version = "${project.mod_version}-mc${project.targetVersion}"
 group = project.maven_group
 
 base {
@@ -16,45 +27,120 @@ repositories {
 	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
 	// for more information about repositories.
-}
 
-loom {
-    splitEnvironmentSourceSets()
+	mavenCentral()
 
-	mods {
-		"chat-plus" {
-			sourceSet sourceSets.main
-			sourceSet sourceSets.client
+	// Modrinth Maven
+	exclusiveContent {
+		forRepository {
+			maven {
+				name = "Modrinth"
+				url = "https://api.modrinth.com/maven"
+			}
+		}
+		filter {
+			includeGroup "maven.modrinth"
 		}
 	}
 
+	// Placeholder API (for StyledChat mod) Maven
+	maven {
+		url "https://maven.nucleoid.xyz/"
+		name "Nucleoid"
+	}
+
+	// Manifold preprocessor
+	maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+}
+
+loom {
+//	splitEnvironmentSourceSets()
+//
+//	mods {
+//		"modid" {
+//			sourceSet sourceSets.main
+//			sourceSet sourceSets.client
+//		}
+//	}
 }
 
 dependencies {
-	// To change the versions see the gradle.properties file
+	// To change the versions see the gradle.properties file or the ./properties/${minecraftVersion}.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	modImplementation "net.fabricmc:fabric-loader:${project.fabric_loader_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}+${project.targetVersion}"
 
-	// Fabric API. This is technically optional, but you probably want it anyway.
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-	
-	// Uncomment the following line to enable the deprecated Fabric API modules. 
-	// These are included in the Fabric API production distribution and allow you to update your mod to the latest modules at a later more convenient time.
+	// Override Fabric API version for local testing (runClient/runServer)
+	if (project.hasProperty("test_fabric_api_version"))
+		modLocalRuntime "net.fabricmc.fabric-api:fabric-api:${project.test_fabric_api_version}"
 
-	// modImplementation "net.fabricmc.fabric-api:fabric-api-deprecated:${project.fabric_version}"
+	// Mod Compatibility
+	if (project.hasProperty("mod_dynmap_version"))
+		modCompileOnly "maven.modrinth:dynmap:${project.mod_dynmap_version}"
+	if (project.hasProperty("mod_styled_chat_version"))
+		modCompileOnly "maven.modrinth:styled-chat:${project.mod_styled_chat_version}"
+	if (project.hasProperty("mod_styled_chat_placeholder_api_version"))
+		modCompileOnly "eu.pb4:placeholder-api:${project.mod_styled_chat_placeholder_api_version}"
+
+	// Manifold
+	annotationProcessor "systems.manifold:manifold-preprocessor:${project.manifold_version}"
 }
 
 processResources {
-	inputs.property "version", project.version
+	def resourceTargets = [
+	    "fabric.mod.json"
+	]
+	def expandProperties = [
+		"version": mod_version,
+		"group": maven_group,
+		"minecraft_version": minecraft_version,
+		"java_version": java_version,
+		"fabric_loader_version": fabric_loader_version,
+		"fabric_loader_version_range": hasProperty("min_fabric_loader_version") && !min_fabric_loader_version.allWhitespace ? ">=${min_fabric_loader_version}" : "*",
+		"fabric_api_version": fabric_api_version,
+		"fabric_api_mod_id": fabric_api_mod_id
+	]
 
-	filesMatching("fabric.mod.json") {
-		expand "version": project.version
+	inputs.properties(expandProperties)
+
+	filesMatching(resourceTargets) {
+		expand inputs.properties
+	}
+}
+
+tasks.register("buildAll") {
+	group = "build"
+	description = "Builds JARs for all defined Minecraft versions"
+	doLast {
+		// Locate the project-specific Java runtime
+		def javaToolchain = javaToolchains.launcherFor(java.toolchain).get()
+		def projectJavaHome = javaToolchain.metadata.installationPath
+
+		logger.lifecycle("Using Java ${javaToolchain.metadata.javaRuntimeVersion} (path=\"${projectJavaHome}\")")
+
+		project.minecraftVersions.each { version ->
+			logger.lifecycle("================ Building for Minecraft ${version} ================")
+			// TODO: Refactor this (is there a better approach?)
+			def execOutput = project.providers.exec {
+				commandLine Paths.get(rootProject.rootDir.absolutePath, DefaultNativePlatform.currentOperatingSystem.windows ? "gradlew.bat" : "gradlew"),
+					"build", "-Pmc=${version}"
+				ignoreExitValue true
+				environment "JAVA_HOME": projectJavaHome
+			}
+			def result = execOutput.result.get()
+			def output = execOutput.standardOutput.asText.get()
+			def error = execOutput.standardError.asText.get()
+			logger.lifecycle("[Minecraft ${version}] BUILD ${result.exitValue == 0 ? "SUCCESS" : "FAILED"}. Process exited with code: ${result.exitValue}")
+			if (result.exitValue != 0) {
+				logger.lifecycle("[Minecraft ${version}] Error: ${error}")
+			}
+		}
 	}
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 17
+	it.options.release = project.java_version.toInteger()
 }
 
 java {
@@ -63,20 +149,22 @@ java {
 	// If you remove this line, sources will not be generated.
 	withSourcesJar()
 
-	sourceCompatibility = JavaVersion.VERSION_17
-	targetCompatibility = JavaVersion.VERSION_17
+	targetCompatibility = sourceCompatibility = JavaVersion.toVersion(project.java_version)
 }
 
 jar {
+	inputs.property "archivesName", project.base.archivesName
+
 	from("LICENSE") {
-		rename { "${it}_${project.base.archivesName.get()}"}
+		rename { "${it}_${inputs.properties.archivesName}" }
 	}
 }
 
 // configure the maven publication
 publishing {
 	publications {
-		mavenJava(MavenPublication) {
+		create("mavenJava", MavenPublication) {
+			artifactId = project.archives_base_name
 			from components.java
 		}
 	}
@@ -88,4 +176,30 @@ publishing {
 		// The repositories here will be used for publishing your artifact, not for
 		// retrieving dependencies.
 	}
+}
+
+
+
+/** ======================================= */
+/** ================ Utils ================ */
+/** ======================================= */
+
+/**
+ * <p>Generates version mapping properties file for preprocessor with format:</p>
+ * - {@code MC_VER=<current_version_index>}<br>
+ * - {@code MC_X_Y_Z=<version_index>} for each sorted version
+ *
+ * @param sortedVersions Pre-ordered list of Minecraft versions
+ * @param currentVersion Target version to mark as {@code MC_VER}
+ */
+def generateBuildProperties(List<String> sortedVersions, String currentVersion) {
+	def currentIndex = sortedVersions.findIndexOf { it == currentVersion }
+	file(Paths.get(rootDir.absolutePath, "./build.properties")).write("""\
+		# ========================================================
+		# ====!! AUTO-GENERATED FILE - DO NOT MANUALLY EDIT !!====
+		# ========================================================
+		
+		MC_VER=${currentIndex}
+		${sortedVersions.indexed().collect { index, version -> "MC_${version.replace('.', '_')}=${index}" }.join("\n")}
+	""".replace('\t', ''))
 }
