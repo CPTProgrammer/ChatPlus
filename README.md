@@ -15,7 +15,7 @@ It can be installed on the **client** or **server**:
 
 
 Compatibility has been implemented for these mods: Styled Chat, Dynmap<br>
-_* Other mods may work without explicit support. Report compatibility requests via [GitHub Issues](https://github.com/CPTProgrammer/ChatPlus)._
+_* Other mods may work without explicit support. Report compatibility requests via [GitHub Issues](https://github.com/CPTProgrammer/ChatPlus/issues)._
 
 ## Screenshots
 
@@ -50,7 +50,7 @@ _* Other mods may work without explicit support. Report compatibility requests v
 
 #### Environment
 
-- Java 23 or higher
+- Java 21 or higher
 - (Optional) Java IDE with Manifold support (e.g., IntelliJ IDEA)<br>
   _* If using IntelliJ IDEA, the Manifold plugin should be installed_
 
