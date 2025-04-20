@@ -19,15 +19,16 @@ _* Other mods may work without explicit support. Report compatibility requests v
 
 ## Screenshots
 
-![image](https://github.com/CPTProgrammer/ChatPlus/assets/46586216/dcd2ca4b-79e9-4692-a8de-02fddfe4a392)
+![image](https://github.com/CPTProgrammer/ChatPlus/assets/46586216/dcd2ca4b-79e9-4692-a8de-02fddfe4a392)<br>
 **^^^ Display the item in the main hand**
 
-![image](https://github.com/CPTProgrammer/ChatPlus/assets/46586216/b0449371-35aa-451b-ab9c-af464f6c597d)
+![image](https://github.com/CPTProgrammer/ChatPlus/assets/46586216/b0449371-35aa-451b-ab9c-af464f6c597d)<br>
 **^^^ Colorful Text**
 
-![image](https://github.com/CPTProgrammer/ChatPlus/assets/46586216/dc3f0451-cbea-4610-8575-ea5da4e97f0f)
+![image](https://github.com/CPTProgrammer/ChatPlus/assets/46586216/dc3f0451-cbea-4610-8575-ea5da4e97f0f)<br>
 **^^^ Display items in slots**
 
+![image](https://github.com/user-attachments/assets/c725d9f7-04d1-4b40-ad13-f09c54d35942)<br>
 **^^^ Escape character `&`**
 
 
