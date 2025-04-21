@@ -119,6 +119,8 @@ tasks.register("buildAll") {
 
 		logger.lifecycle("Using Java ${javaToolchain.metadata.javaRuntimeVersion} (path=\"${projectJavaHome}\")")
 
+		def failedVersions = new ArrayList<String>()
+
 		project.minecraftVersions.each { version ->
 			logger.lifecycle("================ Building for Minecraft ${version} ================")
 			// TODO: Refactor this (is there a better approach?)
@@ -131,11 +133,14 @@ tasks.register("buildAll") {
 			def result = execOutput.result.get()
 			def output = execOutput.standardOutput.asText.get()
 			def error = execOutput.standardError.asText.get()
-			logger.lifecycle("[Minecraft ${version}] BUILD ${result.exitValue == 0 ? "SUCCESS" : "FAILED"}. Process exited with code: ${result.exitValue}")
+			logger.lifecycle("[Minecraft ${version}] BUILD ${result.exitValue == 0 ? "SUCCESSFUL" : "FAILED"}. Process exited with code: ${result.exitValue}")
 			if (result.exitValue != 0) {
+				failedVersions.addLast(version as String)
 				logger.lifecycle("[Minecraft ${version}] Error: ${error}")
 			}
 		}
+
+		if (!failedVersions.isEmpty()) throw new GradleException("Build failed for Minecraft versions: ${failedVersions.join(", ")}")
 	}
 }
 
