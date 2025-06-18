@@ -42,7 +42,7 @@ _* Other mods may work without explicit support. Report compatibility requests v
 | 1.19.3              | 1.19.3 - 1.19.4     |
 | 1.20                | 1.20 - 1.20.2       |
 | 1.20.3              | 1.20.3 - 1.20.6     |
-| 1.21                | 1.21 - 1.21.5       |
+| 1.21                | 1.21 - 1.21.6       |
 
 
 
