@@ -2,11 +2,14 @@ package cn.revaria.chatplus.plugin;
 
 import cn.revaria.chatplus.plugin.annotation.DisableIfModsLoaded;
 import net.fabricmc.loader.api.FabricLoader;
+import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
+import org.spongepowered.asm.service.MixinService;
+import org.spongepowered.asm.util.Annotations;
 
-import java.util.Arrays;
+import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
@@ -23,14 +26,17 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
 	@Override
 	public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
 		try {
-			Class<?> mixinClass = Class.forName(mixinClassName);
-			DisableIfModsLoaded annotation = mixinClass.getAnnotation(DisableIfModsLoaded.class);
-			if (annotation != null) {
-				return Arrays.stream(annotation.value()).noneMatch(modId -> FabricLoader.getInstance().isModLoaded(modId));
+			ClassNode classNode = MixinService.getService().getBytecodeProvider().getClassNode(mixinClassName);
+			AnnotationNode annotationNode = Annotations.getVisible(classNode, DisableIfModsLoaded.class);
+
+			if (annotationNode == null) {
+				return true;
 			}
-			return true;
-		} catch (Exception e) {
-			return true;
+
+			List<String> modIds = Annotations.getValue(annotationNode);
+			return modIds.stream().noneMatch(modId -> FabricLoader.getInstance().isModLoaded(modId));
+		} catch (IOException | ClassNotFoundException e) {
+			return false;
 		}
 	}
 
