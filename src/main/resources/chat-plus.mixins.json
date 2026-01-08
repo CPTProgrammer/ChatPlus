@@ -4,6 +4,7 @@
 	"plugin": "cn.revaria.chatplus.plugin.MixinConfigPlugin",
 	"mixins": [
 		"ChatMixin",
+		"AnvilMixin",
 		"compat.DynmapMixin",
 		"compat.StyledChatMixin"
 	],

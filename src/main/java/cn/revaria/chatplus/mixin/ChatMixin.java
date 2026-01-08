@@ -41,3 +41,4 @@ public abstract class ChatMixin {
 	}
 	#endif
 }
+// 拦截玩家发送的聊天数据包，在消息发送前将其中的 & 颜色代码和 [item] 占位符替换为 Minecraft 内部的文本样式组件。
