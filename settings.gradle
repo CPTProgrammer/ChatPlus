@@ -24,7 +24,7 @@ def loadProperties() {
 
 	// Prefer the version defined by the command line argument -Pmc=x.x.x
 	def inputVersion = hasProperty("mc") ?
-		validateMinecraftVersionFormat(mc as String, "Invalid Minecraft version provided via -Pmc=${minecraft_version}") :
+		validateMinecraftVersionFormat(mc as String, "Invalid Minecraft version provided via -Pmc=${mc}") :
 		validateMinecraftVersionFormat(minecraft_version, "Invalid Minecraft version in gradle.properties: minecraft_version=${minecraft_version}")
 	gradle.ext.minecraft_version = inputVersion
 
