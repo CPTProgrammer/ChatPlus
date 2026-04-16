@@ -1,15 +1,15 @@
 package cn.revaria.chatplus.util;
 
 #if MC_VER <= MC_1_20
-import net.minecraft.text.LiteralTextContent;
+import net.minecraft.network.chat.contents.LiteralContents;
 #else
-import net.minecraft.text.PlainTextContent.Literal;
+import net.minecraft.network.chat.contents.PlainTextContents;
 #endif
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -32,13 +32,13 @@ public class TextStyleFormatter {
 	 * @param sourcePlayer Player used for item stack references
 	 * @return Processed text with styling and item hover elements
 	 */
-	public static MutableText applyStyle(Text sourceText, ServerPlayerEntity sourcePlayer) {
-		MutableText sourceMutableText = sourceText.copy();
+	public static MutableComponent applyStyle(Component sourceText, ServerPlayer sourcePlayer) {
+		MutableComponent sourceMutableText = sourceText.copy();
 
-		MutableText finalText = Text.empty().setStyle(sourceMutableText.getStyle());
+		MutableComponent finalText = Component.empty().setStyle(sourceMutableText.getStyle());
 
-		if (sourceText.getContent() instanceof #if MC_VER <= MC_1_20 LiteralTextContent #else Literal #endif plainTextContent) {
-			String changedMessage = plainTextContent.string()
+		if (sourceText.getContents() instanceof #if MC_VER <= MC_1_20 LiteralContents #else PlainTextContents #endif plainTextContent) {
+			String changedMessage = plainTextContent.text()
 				.replace('&', '§')
 				.replace("§§", "&");
 			String regex = "\\[item(?:=([1-9]))?\\]";
@@ -56,22 +56,22 @@ public class TextStyleFormatter {
 			}
 
 			for (String message : messages) {
-				finalText.append(Text.literal(message));
+				finalText.append(Component.literal(message));
 				if (!itemDeque.isEmpty()) {
 					ItemStack itemStack;
 					if (itemDeque.getFirst() == MAIN_HAND) {
-						itemStack = sourcePlayer.getMainHandStack();
+						itemStack = sourcePlayer.getMainHandItem();
 					} else {
-						itemStack = sourcePlayer.getInventory().getStack(itemDeque.getFirst() - 1);
+						itemStack = sourcePlayer.getInventory().getItem(itemDeque.getFirst() - 1);
 					}
-					finalText.append(itemStack.toHoverableText());
+					finalText.append(itemStack.getDisplayName());
 					itemDeque.removeFirst();
 				}
 			}
 		}
 
-		List<Text> sourceTexts = sourceMutableText.getSiblings();
-		for (Text text : sourceTexts) {
+		List<Component> sourceTexts = sourceMutableText.getSiblings();
+		for (Component text : sourceTexts) {
 			finalText.append(applyStyle(text, sourcePlayer));
 		}
 

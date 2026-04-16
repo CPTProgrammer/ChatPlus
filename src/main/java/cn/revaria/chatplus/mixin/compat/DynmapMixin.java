@@ -2,8 +2,8 @@ package cn.revaria.chatplus.mixin.compat;
 
 import com.llamalad7.mixinextras.sugar.Local;
 import com.llamalad7.mixinextras.sugar.ref.LocalRef;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
@@ -35,7 +35,7 @@ import static cn.revaria.chatplus.util.TextStyleFormatter.applyStyle;
 )
 public abstract class DynmapMixin {
 	@Inject(method = "handleChat", at = @At("HEAD"), remap = false)
-	private void modifyMessage(ServerPlayerEntity player, String message, CallbackInfo ci, @Local(argsOnly = true) LocalRef<String> messageRef) {
-		messageRef.set(applyStyle(Text.of(message), player).getString());
+	private void modifyMessage(ServerPlayer player, String message, CallbackInfo ci, @Local(argsOnly = true) LocalRef<String> messageRef) {
+		messageRef.set(applyStyle(Component.nullToEmpty(message), player).getString());
 	}
 }
