@@ -29,7 +29,10 @@ import static cn.revaria.chatplus.util.TextStyleFormatter.applyStyle;
 			"org.dynmap.fabric_1_21.DynmapPlugin$ChatHandler",
 			"org.dynmap.fabric_1_21_1.DynmapPlugin$ChatHandler",
 			"org.dynmap.fabric_1_21_3.DynmapPlugin$ChatHandler",
-			"org.dynmap.fabric_1_21_5.DynmapPlugin$ChatHandler"
+			"org.dynmap.fabric_1_21_5.DynmapPlugin$ChatHandler",
+			"org.dynmap.fabric_1_21_7.DynmapPlugin$ChatHandler",
+			"org.dynmap.fabric_1_21_9_10.DynmapPlugin$ChatHandler",
+			"org.dynmap.fabric_1_21_11.DynmapPlugin$ChatHandler",
 		}
 	#endif
 )
