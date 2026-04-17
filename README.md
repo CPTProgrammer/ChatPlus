@@ -1,6 +1,6 @@
 # Chat Plus
 
-![Static Badge](https://img.shields.io/badge/Minecraft_version-1.19%2B_%7C_1.20%2B_%7C_1.21%2B-red?style=flat)  
+![Static Badge](https://img.shields.io/badge/Minecraft_version-1.19%2B_%7C_1.20%2B_%7C_1.21%2B_%7C_26.1%2B-red?style=flat)  
 <a href="https://modrinth.com/mod/chatplus">
   <img src="https://img.shields.io/badge/Modrinth-Chat_Plus-%234e910e?style=flat" />
 </a>
@@ -43,6 +43,7 @@ _* Other mods may work without explicit support. Report compatibility requests v
 | 1.20                | 1.20 - 1.20.2       |
 | 1.20.3              | 1.20.3 - 1.20.6     |
 | 1.21                | 1.21 - 1.21.11      |
+| 26.1                | 26.1 - 26.1.2       |
 
 
 
@@ -50,7 +51,7 @@ _* Other mods may work without explicit support. Report compatibility requests v
 
 #### Environment
 
-- Java 21 or higher
+- Java 25 or higher
 - (Optional) Java IDE with Manifold support (e.g., IntelliJ IDEA)<br>
   _* If using IntelliJ IDEA, the Manifold plugin should be installed_
 
