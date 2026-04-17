@@ -34,6 +34,10 @@ import static cn.revaria.chatplus.util.TextStyleFormatter.applyStyle;
 			"org.dynmap.fabric_1_21_9_10.DynmapPlugin$ChatHandler",
 			"org.dynmap.fabric_1_21_11.DynmapPlugin$ChatHandler",
 		}
+	#elif MC_VER <= MC_26_1
+		// TODO: Since Dynmap has not yet been updated to be compatible with Minecraft 26.1,
+		//  the compatibility Mixins for Dynmap are currently not enabled for this version.
+		{}
 	#endif
 )
 public abstract class DynmapMixin {
