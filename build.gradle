@@ -2,7 +2,8 @@ import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 import java.nio.file.Paths
 
 plugins {
-	id "fabric-loom" version "1.10-SNAPSHOT"
+	id "net.fabricmc.fabric-loom-remap" version "1.16-SNAPSHOT" apply false
+	id "net.fabricmc.fabric-loom" version "1.16-SNAPSHOT" apply false
 	id "maven-publish"
 
 	// Manifold preprocessor
@@ -11,6 +12,13 @@ plugins {
 
 // Transfer gradle extra properties to root project extra properties
 gradle.ext.properties.each { prop -> project.ext.set(prop.key, prop.value) }
+
+def loomRemapStr = project.findProperty("fabric_loom_remap")?.toString()
+assert loomRemapStr in ["true", "false"] :
+	"${loomRemapStr == null ? "Missing" : "Invalid"} property in ${Paths.get(version_properties_path, "${project.targetVersion}.properties")} : " +
+	"fabric_loom_remap${loomRemapStr == null ? "" : "=$loomRemapStr"}"
+def loomRemap = loomRemapStr.toBoolean()
+apply plugin: loomRemap ? "net.fabricmc.fabric-loom-remap" : "net.fabricmc.fabric-loom"
 
 generateBuildProperties(project.minecraftVersions, project.targetVersion)
 
@@ -64,24 +72,40 @@ loom {
 //	}
 }
 
+configurations {
+	remappableImplementation
+	remappableCompileOnly
+	remappableLocalRuntime
+}
+
+if (loomRemap) {
+	configurations.modImplementation.extendsFrom(configurations.remappableImplementation)
+	configurations.modCompileOnly.extendsFrom(configurations.remappableCompileOnly)
+	configurations.modLocalRuntime.extendsFrom(configurations.remappableLocalRuntime)
+} else {
+	configurations.implementation.extendsFrom(configurations.remappableImplementation)
+	configurations.compileOnly.extendsFrom(configurations.remappableCompileOnly)
+	configurations.localRuntime.extendsFrom(configurations.remappableLocalRuntime)
+}
+
 dependencies {
 	// To change the versions see the gradle.properties file or the ./properties/${minecraftVersion}.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings loom.officialMojangMappings()
-	modImplementation "net.fabricmc:fabric-loader:${project.fabric_loader_version}"
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}+${project.targetVersion}"
+	if (loomRemap) mappings loom.officialMojangMappings()
+	remappableImplementation "net.fabricmc:fabric-loader:${project.fabric_loader_version}"
+	remappableImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}+${project.targetVersion}"
 
 	// Override Fabric API version for local testing (runClient/runServer)
 	if (project.hasProperty("test_fabric_api_version"))
-		modLocalRuntime "net.fabricmc.fabric-api:fabric-api:${project.test_fabric_api_version}"
+		remappableLocalRuntime "net.fabricmc.fabric-api:fabric-api:${project.test_fabric_api_version}"
 
 	// Mod Compatibility
-	if (project.hasProperty("mod_dynmap_version"))
-		modCompileOnly "maven.modrinth:dynmap:${project.mod_dynmap_version}"
-	if (project.hasProperty("mod_styled_chat_version"))
-		modCompileOnly "maven.modrinth:styled-chat:${project.mod_styled_chat_version}"
-	if (project.hasProperty("mod_styled_chat_placeholder_api_version"))
-		modCompileOnly "eu.pb4:placeholder-api:${project.mod_styled_chat_placeholder_api_version}"
+	if (project.hasProperty("mod_dynmap_version") && !project.mod_dynmap_version.allWhitespace)
+		remappableCompileOnly "maven.modrinth:dynmap:${project.mod_dynmap_version}"
+	if (project.hasProperty("mod_styled_chat_version") && !project.mod_styled_chat_version.allWhitespace)
+		remappableCompileOnly "maven.modrinth:styled-chat:${project.mod_styled_chat_version}"
+	if (project.hasProperty("mod_styled_chat_placeholder_api_version") && !project.mod_styled_chat_placeholder_api_version.allWhitespace)
+		remappableCompileOnly "eu.pb4:placeholder-api:${project.mod_styled_chat_placeholder_api_version}"
 
 	// Manifold
 	annotationProcessor "systems.manifold:manifold-preprocessor:${project.manifold_version}"
