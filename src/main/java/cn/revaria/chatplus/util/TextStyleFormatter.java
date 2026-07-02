@@ -39,6 +39,7 @@ public class TextStyleFormatter {
 		String sourceLiteralText = translateInput(sourceRawText, sourcePlayer, formatsTable);
 
 		/* Debug
+		sourcePlayer.sendSystemMessage(Component.literal(sourceRawText));
 		sourcePlayer.sendSystemMessage(Component.literal(sourceLiteralText));
 		for (int i : formatsTable.keySet()) {
 			ArrayList<ChatFormat> formatsList = formatsTable.get(i);
@@ -120,7 +121,7 @@ public class TextStyleFormatter {
 
 			startIndex = i;
 		}
-		if (startIndex < sourceLiteralText.length() - 1) {
+		if (startIndex < sourceLiteralText.length()) {
 			finalText.append(composeChatComponent(
 				sourceLiteralText.substring(startIndex, sourceLiteralText.length()),
 				currentColor,
