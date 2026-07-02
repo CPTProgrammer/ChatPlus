@@ -20,6 +20,8 @@ assert loomRemapStr in ["true", "false"] :
 def loomRemap = loomRemapStr.toBoolean()
 apply plugin: loomRemap ? "net.fabricmc.fabric-loom-remap" : "net.fabricmc.fabric-loom"
 
+boolean hasNewVersionScheme = project.targetVersion.tokenize(".")*.toInteger()[0] >= 26
+
 generateBuildProperties(project.minecraftVersions, project.targetVersion)
 
 version = "${project.mod_version}-mc${project.targetVersion}"
@@ -119,7 +121,7 @@ processResources {
 	def expandProperties = [
 		"version": mod_version,
 		"group": maven_group,
-		"minecraft_version": minecraft_version,
+		"minecraft_version_range": "${hasNewVersionScheme ? "^" : "~"}${targetVersion}",
 		"java_version": java_version,
 		"fabric_loader_version": fabric_loader_version,
 		"fabric_loader_version_range": hasProperty("min_fabric_loader_version") && !min_fabric_loader_version.allWhitespace ? ">=${min_fabric_loader_version}" : "*",

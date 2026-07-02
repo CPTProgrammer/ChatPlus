@@ -60,7 +60,7 @@ static String findLatestCompatibleVersion(List<String> sortedVersions, String ve
 	sortedVersions.findAll {
 		def versionList = it.tokenize(".")*.toInteger()
 		compareMinecraftVersion(versionList, targetVersionList) <= 0 &&
-			(targetVersionList[0] == versionList[0] && targetVersionList[1] == versionList[1])
+			(targetVersionList[0] == versionList[0] && (targetVersionList[0] >= 26 || targetVersionList[1] == versionList[1]))
 	}.max { a, b -> compareMinecraftVersion(a, b) }
 }
 
