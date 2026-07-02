@@ -93,11 +93,12 @@ dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	if (loomRemap) mappings loom.officialMojangMappings()
 	remappableImplementation "net.fabricmc:fabric-loader:${project.fabric_loader_version}"
-	remappableImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}+${project.targetVersion}"
 
+	def resolvedFabricApiVersion = "${project.fabric_api_version}+${project.targetVersion}"
 	// Override Fabric API version for local testing (runClient/runServer)
 	if (project.hasProperty("test_fabric_api_version"))
-		remappableLocalRuntime "net.fabricmc.fabric-api:fabric-api:${project.test_fabric_api_version}"
+		resolvedFabricApiVersion = "${project.test_fabric_api_version}"
+	remappableImplementation "net.fabricmc.fabric-api:fabric-api:${resolvedFabricApiVersion}"
 
 	// Mod Compatibility
 	if (project.hasProperty("mod_dynmap_version") && !project.mod_dynmap_version.allWhitespace)
