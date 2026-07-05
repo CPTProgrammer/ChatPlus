@@ -20,6 +20,8 @@ assert loomRemapStr in ["true", "false"] :
 def loomRemap = loomRemapStr.toBoolean()
 apply plugin: loomRemap ? "net.fabricmc.fabric-loom-remap" : "net.fabricmc.fabric-loom"
 
+boolean hasNewVersionScheme = project.targetVersion.tokenize(".")*.toInteger()[0] >= 26
+
 generateBuildProperties(project.minecraftVersions, project.targetVersion)
 
 version = "${project.mod_version}-mc${project.targetVersion}"
@@ -93,11 +95,12 @@ dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	if (loomRemap) mappings loom.officialMojangMappings()
 	remappableImplementation "net.fabricmc:fabric-loader:${project.fabric_loader_version}"
-	remappableImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}+${project.targetVersion}"
 
+	def resolvedFabricApiVersion = "${project.fabric_api_version}+${project.targetVersion}"
 	// Override Fabric API version for local testing (runClient/runServer)
 	if (project.hasProperty("test_fabric_api_version"))
-		remappableLocalRuntime "net.fabricmc.fabric-api:fabric-api:${project.test_fabric_api_version}"
+		resolvedFabricApiVersion = "${project.test_fabric_api_version}"
+	remappableImplementation "net.fabricmc.fabric-api:fabric-api:${resolvedFabricApiVersion}"
 
 	// Mod Compatibility
 	if (project.hasProperty("mod_dynmap_version") && !project.mod_dynmap_version.allWhitespace)
@@ -118,7 +121,7 @@ processResources {
 	def expandProperties = [
 		"version": mod_version,
 		"group": maven_group,
-		"minecraft_version": minecraft_version,
+		"minecraft_version_range": "${hasNewVersionScheme ? "^" : "~"}${targetVersion}",
 		"java_version": java_version,
 		"fabric_loader_version": fabric_loader_version,
 		"fabric_loader_version_range": hasProperty("min_fabric_loader_version") && !min_fabric_loader_version.allWhitespace ? ">=${min_fabric_loader_version}" : "*",
