@@ -1,10 +1,11 @@
-package cn.revaria.chatplus.format.formats;
+package cn.revaria.chatplus.format.formats.insertformats;
 
-import cn.revaria.chatplus.format.ChatFormat;
 import cn.revaria.chatplus.format.ChatFormatType;
+import cn.revaria.chatplus.format.formats.ChatInsertFormat;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.item.ItemStack;
 
-public class ChatInsertItemFormat implements ChatFormat {
+public class ChatInsertItemFormat implements ChatInsertFormat {
 
 	private final ItemStack item;
 
@@ -21,6 +22,10 @@ public class ChatInsertItemFormat implements ChatFormat {
 		return item;
 	}
 
+	@Override
+	public MutableComponent getInsertComponent() {
+		return item.getDisplayName().copy();
+	}
 	@Override
 	public int startingIndex() {
 		return startingIndex;

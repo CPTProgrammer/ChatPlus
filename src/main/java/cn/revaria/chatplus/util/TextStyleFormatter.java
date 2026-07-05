@@ -2,17 +2,20 @@ package cn.revaria.chatplus.util;
 
 #if MC_VER <= MC_1_20
 import net.minecraft.network.chat.contents.LiteralContents;
-#else
+#endif
+
+import cn.revaria.chatplus.ChatPlus;
+import cn.revaria.chatplus.format.formats.ChatInsertFormat;
+import cn.revaria.chatplus.format.formats.insertformats.ChatInsertReminderFormat;
 import cn.revaria.chatplus.format.ChatFormat;
 import cn.revaria.chatplus.format.ChatFormatType;
 import cn.revaria.chatplus.format.formats.ChatColorFormat;
 import cn.revaria.chatplus.format.formats.ChatFontFormat;
-import cn.revaria.chatplus.format.formats.ChatInsertItemFormat;
+import cn.revaria.chatplus.format.formats.insertformats.ChatInsertItemFormat;
 import cn.revaria.chatplus.format.formats.ChatResetFormat;
-#endif
-
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.*;
@@ -69,7 +72,7 @@ public class TextStyleFormatter {
 
 			ArrayList<ChatFormat> formatsList = formatsTable.get(i);
 
-			if (formatsList.getFirst() instanceof ChatInsertItemFormat insertItem) {
+			if (formatsList.getFirst() instanceof ChatInsertFormat insertFormat) {
 
 				if (i > 0) {
 					finalText.append(composeChatComponent(
@@ -79,7 +82,7 @@ public class TextStyleFormatter {
 						));
 				}
 
-				finalText.append(insertItem.getItem().getDisplayName());
+				finalText.append(insertFormat.getInsertComponent());
 
 				startIndex = i;
 				continue;
@@ -151,6 +154,9 @@ public class TextStyleFormatter {
 	private static String translateInput(String sourceRawText, ServerPlayer sourcePlayer, TreeMap<Integer, ArrayList<ChatFormat>> formatsTableOutput) {
 
 		StringBuilder textBuilder = new StringBuilder();
+
+		MinecraftServer server = ChatPlus.getServer();
+		String[] playerNames = server.getPlayerList().getPlayerNamesArray();
 
 		String itemRegex = "\\[item(?:=([1-9]))?\\]";
 		Pattern itemPattern = Pattern.compile(itemRegex);
@@ -268,21 +274,42 @@ public class TextStyleFormatter {
 				}
 			}
 
+			if ((character >= '0' && character <= '9')
+				|| (character >= 'a' && character <= 'z')
+				|| (character >= 'A' && character <= 'Z')
+				|| character == '_') {
+
+				String insertName = matchPlayerName(sourceRawText, playerNames, i);
+				if (insertName != null) {
+
+					if (!formatsTableOutput.containsKey(currentIndex)) {
+						formatsTableOutput.put(currentIndex, new ArrayList<>());
+					}
+					formatsTableOutput.get(currentIndex).add(new ChatInsertReminderFormat(
+						currentIndex,
+						server.getPlayerList().getPlayer(insertName)
+					));
+
+					i += insertName.length() - 1;
+					continue;
+				}
+			}
+
 			textBuilder.append(character);
 		}
 
 		formatsTableOutput.forEach((i, formatsList) -> {
 
 			boolean containsResetFormat = false;
-			ChatInsertItemFormat containedInsertItemFormat = null;
+			ChatInsertFormat containedInsertFormat = null;
 			for (ChatFormat format : formatsList) {
 
 				if (format.formatType() == ChatFormatType.RESET) {
 					containsResetFormat = true;
 					break;
 				}
-				if (format instanceof ChatInsertItemFormat insertItemFormat && format.formatType() == ChatFormatType.INSERT) {
-					containedInsertItemFormat = insertItemFormat.copy();
+				if (format instanceof ChatInsertFormat insertFormat && format.formatType() == ChatFormatType.INSERT) {
+					containedInsertFormat = insertFormat.copy();
 					break;
 				}
 			}
@@ -291,12 +318,29 @@ public class TextStyleFormatter {
 				formatsList.clear();
 				formatsList.add(new ChatResetFormat(i));
 			}
-			if (containedInsertItemFormat != null) {
+			if (containedInsertFormat != null) {
 				formatsList.clear();
-				formatsList.add(containedInsertItemFormat);
+				formatsList.add(containedInsertFormat);
 			}
 		});
 
 		return textBuilder.toString();
+	}
+
+	private static String matchPlayerName(String chatText, String[] playerNames, int startingIndex) {
+
+		String aimName = null;
+
+		for (String name : playerNames) {
+
+			if (chatText.startsWith(name, startingIndex)) {
+
+				if (aimName == null || aimName.length() < name.length()) {
+					aimName = name;
+				}
+			}
+		}
+
+		return aimName;
 	}
 }
