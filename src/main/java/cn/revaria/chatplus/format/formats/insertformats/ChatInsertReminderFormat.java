@@ -3,11 +3,14 @@ package cn.revaria.chatplus.format.formats.insertformats;
 import cn.revaria.chatplus.format.ChatFormatType;
 import cn.revaria.chatplus.format.formats.ChatInsertFormat;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.TextColor;
+import net.minecraft.network.protocol.game.ClientboundSoundPacket;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 
 public class ChatInsertReminderFormat implements ChatInsertFormat {
@@ -32,7 +35,17 @@ public class ChatInsertReminderFormat implements ChatInsertFormat {
 	public MutableComponent getInsertComponent() {
 		if (!soundPlayed) {
 			soundPlayed = true;
-			aimPlayer.playSound(SoundEvents.EXPERIENCE_ORB_PICKUP, 3, 1);
+
+			aimPlayer.connection.send(new ClientboundSoundPacket(
+				Holder.direct(SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath("minecraft", "entity.experience_orb.pickup"))),
+				SoundSource.MASTER,
+				aimPlayer.position().x,
+				aimPlayer.position().y,
+				aimPlayer.position().z,
+				3,
+				1,
+				aimPlayer.level().getRandom().nextLong()
+			));
 		}
 		return Component.literal("@").append(aimPlayer.getDisplayName())
 			.withColor(TextColor.GREEN)
