@@ -7,6 +7,7 @@ import net.minecraft.network.chat.contents.LiteralContents;
 import cn.revaria.chatplus.ChatPlus;
 import cn.revaria.chatplus.format.formats.ChatInsertFormat;
 import cn.revaria.chatplus.format.formats.insertformats.ChatInsertReminderFormat;
+import cn.revaria.chatplus.format.formats.insertformats.ChatInsertRemindAllFormat;
 import cn.revaria.chatplus.format.ChatFormat;
 import cn.revaria.chatplus.format.ChatFormatType;
 import cn.revaria.chatplus.format.formats.ChatColorFormat;
@@ -270,6 +271,38 @@ public class TextStyleFormatter {
 					formatsTableOutput.get(currentIndex).add(new ChatResetFormat(currentIndex));
 
 					++i;
+					continue;
+				}
+			}
+
+			if (character == '@') {
+
+				if (sourceRawText.startsWith("All", i + 1)
+					|| sourceRawText.startsWith("ALL", i + 1)
+					|| sourceRawText.startsWith("all", i + 1)) {
+
+					if (!formatsTableOutput.containsKey(currentIndex)) {
+						formatsTableOutput.put(currentIndex, new ArrayList<>());
+					}
+					formatsTableOutput.get(currentIndex).add(new ChatInsertRemindAllFormat(
+						currentIndex,
+						"All"
+					));
+
+					i += 3;
+					continue;
+				}
+				if (sourceRawText.startsWith("所有人", i + 1)) {
+
+					if (!formatsTableOutput.containsKey(currentIndex)) {
+						formatsTableOutput.put(currentIndex, new ArrayList<>());
+					}
+					formatsTableOutput.get(currentIndex).add(new ChatInsertRemindAllFormat(
+						currentIndex,
+						"所有人"
+					));
+
+					i += 3;
 					continue;
 				}
 			}
