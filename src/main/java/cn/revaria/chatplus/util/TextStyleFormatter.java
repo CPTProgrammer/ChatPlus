@@ -43,6 +43,8 @@ public class TextStyleFormatter {
 		String sourceLiteralText = translateInput(sourceRawText, sourcePlayer, formatsTable);
 
 		/* Debug
+		sourcePlayer.sendSystemMessage(Component.literal("原始聊天代码："));
+		sourcePlayer.sendSystemMessage(Component.literal(sourceMutableText.toString()));
 		sourcePlayer.sendSystemMessage(Component.literal("原始聊天文本："));
 		sourcePlayer.sendSystemMessage(Component.literal(sourceRawText));
 		sourcePlayer.sendSystemMessage(Component.literal("提取到的聊天内容："));
@@ -67,7 +69,7 @@ public class TextStyleFormatter {
 			}
 		}*/
 
-		MutableComponent finalText = Component.empty().setStyle(sourceMutableText.getStyle());
+		MutableComponent finalText = Component.literal("");
 		ChatColorFormat currentColor = new ChatColorFormat(0, 'f');
 		HashSet<ChatFontFormat> currentFonts = new HashSet<>();
 		int startIndex = 0;
