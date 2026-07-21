@@ -43,7 +43,7 @@ _* Other mods may work without explicit support. Report compatibility requests v
 | 1.20                | 1.20 - 1.20.2       |
 | 1.20.3              | 1.20.3 - 1.20.6     |
 | 1.21                | 1.21 - 1.21.11      |
-| 26.1                | 26.1 - 26.1.2       |
+| 26.1                | 26.1 - 26.2         |
 
 
 
@@ -112,4 +112,3 @@ To build JARs for all Minecraft versions defined in `./properties`:
 
 - [@SAGUMEDREAM](https://github.com/SAGUMEDREAM) for advice on mixin development.
 - [Distant-Horizons-Team/Distant Horizons](https://gitlab.com/distant-horizons-team/distant-horizons/) for inspiring the build configuration design.
-
