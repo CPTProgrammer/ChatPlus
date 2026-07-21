@@ -43,8 +43,11 @@ public class TextStyleFormatter {
 		String sourceLiteralText = translateInput(sourceRawText, sourcePlayer, formatsTable);
 
 		/* Debug
+		sourcePlayer.sendSystemMessage(Component.literal("原始聊天文本："));
 		sourcePlayer.sendSystemMessage(Component.literal(sourceRawText));
+		sourcePlayer.sendSystemMessage(Component.literal("提取到的聊天内容："));
 		sourcePlayer.sendSystemMessage(Component.literal(sourceLiteralText));
+		sourcePlayer.sendSystemMessage(Component.literal("修饰列表："));
 		for (int i : formatsTable.keySet()) {
 			ArrayList<ChatFormat> formatsList = formatsTable.get(i);
 			sourcePlayer.sendSystemMessage(Component.literal(i + "."));
