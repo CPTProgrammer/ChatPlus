@@ -1,6 +1,6 @@
 # Chat Plus
 
-![Static Badge](https://img.shields.io/badge/Minecraft_version-1.19%2B_%7C_1.20%2B_%7C_1.21%2B_%7C_26.1%2B-red?style=flat)  
+![Static Badge](https://img.shields.io/badge/Minecraft_version-1.19%2B_%7C_1.20%2B_%7C_1.21%2B_%7C_26.x-red?style=flat)  
 <a href="https://modrinth.com/mod/chatplus">
   <img src="https://img.shields.io/badge/Modrinth-Chat_Plus-%234e910e?style=flat" />
 </a>
