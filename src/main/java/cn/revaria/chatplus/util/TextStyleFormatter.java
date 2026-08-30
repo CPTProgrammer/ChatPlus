@@ -76,5 +76,17 @@ public class TextStyleFormatter {
 		}
 
 		return finalText;
+		}
+	
+		/**
+		 * Simple style application that only replaces color codes.
+		 * Used for anvil renaming where [item] tags are not appropriate.
+		 *
+		 * @param text The text to format
+		 * @return Formatted text with § color codes
+		 */
+		public static String applySimpleStyle(String text) {
+			if (text == null) return null;
+			return text.replace('&', '§').replace("§§", "&");
+		}
 	}
-}
