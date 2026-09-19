@@ -43,7 +43,7 @@ _* Other mods may work without explicit support. Report compatibility requests v
 | 1.20                | 1.20 - 1.20.2       |
 | 1.20.3              | 1.20.3 - 1.20.6     |
 | 1.21                | 1.21 - 1.21.11      |
-| 26.1                | 26.1 - 26.2         |
+| 26.1                | 26.1 - 26.3         |
 
 
 
